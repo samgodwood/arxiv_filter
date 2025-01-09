@@ -4,6 +4,9 @@
 # Ignore log files
 *.log
 
+# Ignore virtual environment folder
+arxiv_filter_env/
+
 # Other common ignores (optional)
 node_modules/
 *.pyc
