@@ -1,0 +1,9 @@
+# Ignore environment variables file
+.env
+
+# Ignore log files
+*.log
+
+# Other common ignores (optional)
+node_modules/
+*.pyc
