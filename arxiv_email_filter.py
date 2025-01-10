@@ -74,7 +74,7 @@ def extract_papers(content):
     papers = []
 
     # Use a regular expression to match multiple paper blocks
-    pattern = re.compile(r'arXiv:(\d+\.\d+)\s+Date:.*?Title:\s+(.*?)\s+Authors:\s+(.*?)\s+Categories:.*?\\(.*?)\\.*?https://arxiv.org/abs/\1', re.DOTALL)
+    pattern = re.compile(r'arXiv:(\d+\.\d+)\s+Date:.*?Title:\s+(.*?)\s+Authors:\s+(.*?)\s+Categories:.*?\\(.*?)(https://arxiv.org/abs/\1)', re.DOTALL)
     
     matches = pattern.findall(content)
     logging.info(f"Found {len(matches)} papers.")
@@ -94,6 +94,7 @@ def extract_papers(content):
 
     logging.info(f"Extracted {len(papers)} papers.")
     return papers
+
 
 def parse_email(mail, email_id):
     logging.info(f"Starting to parse email with ID: {email_id}")
@@ -167,11 +168,12 @@ if __name__ == "__main__":
                 if filtered_papers:
                     email_body = "Here are the filtered papers relevant to your research:\n\n"
                     for i, paper in enumerate(filtered_papers, start=1):
+                        abstract_preview = paper['abstract'][:500] + "..." if len(paper['abstract']) > 500 else paper['abstract']
                         email_body += (f"Paper {i}:\n"
                                        f"Title: {paper['title']}\n"
                                        f"arXiv ID: {paper['arxiv_id']}\n"
                                        f"Authors: {paper['authors']}\n"
-                                       f"Abstract: {paper['abstract']}\n"
+                                       f"Abstract: {abstract_preview}\n"
                                        + "-"*40 + "\n\n")
                 else:
                     email_body = "No papers matched the provided keywords."
@@ -186,8 +188,4 @@ if __name__ == "__main__":
         logging.error(f"An error occurred: {e}")
 
 
-#### NEXT STEPS:
-# FIX THE ABSTRACT EXTRACTION
-# TIDY UP COMMENTS
-# PUSH TO GITHUB WITH README, REQUIREMENTS.TXT, AND REMOVE MY SENSTIVE INFO
-# Figure out best way for code comments.
+
