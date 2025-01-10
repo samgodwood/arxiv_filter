@@ -48,13 +48,13 @@ def fetch_emails(mail, folder="INBOX"):
     try:
         mail.select(folder)  # Select the folder (INBOX by default)
         
-        # Get today's date in format 'dd-Mon-yyyy'
+        # Get today's date
         today = datetime.today().strftime('%d-%b-%Y')
 
-        # Modify the search criterion to include the 'SINCE' filter for today
+        # search criterion to include the 'SINCE' filter for today
         search_criterion_with_date = f'({search_criterion} SINCE "{today}")'
         
-        result, data = mail.search(None, search_criterion_with_date)  # Search emails based on the criterion
+        result, data = mail.search(None, search_criterion_with_date)  # Search emails
         if result != 'OK':
             logging.error("No emails found with the specified criteria.")
             return []
@@ -73,7 +73,7 @@ def extract_papers(content):
 
     papers = []
 
-    # Use a regular expression to match multiple paper blocks
+    # Use a regular expression to match multiple paper blocks in email content
     pattern = re.compile(r'arXiv:(\d+\.\d+)\s+Date:.*?Title:\s+(.*?)\s+Authors:\s+(.*?)\s+Categories:.*?\\(.*?)(https://arxiv.org/abs/\1)', re.DOTALL)
     
     matches = pattern.findall(content)
@@ -126,13 +126,21 @@ def filter_papers(papers, keywords):
     if not papers:
         return []
     
+    # Normalize keywords to lowercase for case-insensitive comparison
     keywords = [kw.lower() for kw in keywords]
-    filtered = []
+    
+    filtered = []  # List to store papers that match any keyword
+    
+    # Check each paper for the presence of any keyword
     for paper in papers:
+        # Combine title, abstract, and authors into a single string for easier searching
         combined_text = f"{paper['title']} {paper['abstract']} {paper['authors']}".lower()
+        
+        # If any keyword appears in the combined text, add the paper to the filtered list
         if any(kw in combined_text for kw in keywords):
             filtered.append(paper)
-    return filtered
+    
+    return filtered 
 
 def send_email(recipient, subject, body):
     try:
@@ -141,33 +149,39 @@ def send_email(recipient, subject, body):
         msg["From"] = EMAIL_ACCOUNT
         msg["To"] = recipient
 
+        # Set up connection with the SMTP server
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, context=context) as server:
-            server.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
-            server.sendmail(EMAIL_ACCOUNT, recipient, msg.as_string())
+            server.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)  # Log in to the email server
+            server.sendmail(EMAIL_ACCOUNT, recipient, msg.as_string())  # Send the email
+
         logging.info("Email sent successfully.")
+    
     except Exception as e:
         logging.error(f"Error sending email: {e}")
 
+# Main execution block
 if __name__ == "__main__":
     try:
         logging.info("Connecting to the IMAP server...")
-        mail = connect_imap()
+        mail = connect_imap()  
 
         logging.info("Fetching emails...")
-        email_ids = fetch_emails(mail, folder="INBOX")
+        email_ids = fetch_emails(mail, folder="INBOX")  # Fetch 
 
         if email_ids:
-            email_id = email_ids[0]
+            email_id = email_ids[0]  # Process l
             logging.info(f"Parsing email ID: {email_id}")
-            papers = parse_email(mail, email_id)
+            papers = parse_email(mail, email_id)  # Extract 
 
             if papers:
+                # Filter papers 
                 filtered_papers = filter_papers(papers, keywords)
 
                 if filtered_papers:
                     email_body = "Here are the filtered papers relevant to your research:\n\n"
                     for i, paper in enumerate(filtered_papers, start=1):
+                        # Make abstracts less bulky by limiting to 500 chars
                         abstract_preview = paper['abstract'][:500] + "..." if len(paper['abstract']) > 500 else paper['abstract']
                         email_body += (f"Paper {i}:\n"
                                        f"Title: {paper['title']}\n"
@@ -178,6 +192,7 @@ if __name__ == "__main__":
                 else:
                     email_body = "No papers matched the provided keywords."
 
+                # Send the email
                 send_email(RECIPIENT_EMAIL, "Filtered Papers", email_body)
             else:
                 logging.info("No papers found in the email.")
@@ -186,6 +201,5 @@ if __name__ == "__main__":
     
     except Exception as e:
         logging.error(f"An error occurred: {e}")
-
 
 
